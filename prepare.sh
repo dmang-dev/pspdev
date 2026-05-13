@@ -26,7 +26,14 @@ if [ "${UNAME_S:0:5}" = "MINGW" ] || [ "${UNAME_S:0:5}" = "MSYS_" ] || [ "${UNAM
   #     MINGW upstream; also filtered out of devkitPro's bundled MSYS2.
   #   - gmp / mpfr / mpc runtime libs: pulled in transitively by the
   #     corresponding -devel packages, no need to list separately.
-  pacman -S --needed --noconfirm \
+  #
+  # `--overwrite='/usr/share/info/*'` works around the autoconf/automake
+  # version-bump trap: autoconf2.72 and autoconf2.73 both claim
+  # /usr/share/info/autoconf.info.gz, and devkitPro's MSYS2 typically ships
+  # an older autoconf version than the current upstream repos. Same for
+  # automake1.17 vs 1.18 etc. .info files are documentation-only, so
+  # overwriting them is safe; the freshly-installed version ships its own.
+  pacman -S --needed --noconfirm --overwrite='/usr/share/info/*' \
     base-devel \
     git \
     patch \

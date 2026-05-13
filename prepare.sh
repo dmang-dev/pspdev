@@ -2,8 +2,72 @@
 
 echo "Detecting OS and installing packages required for PSP SDK"
 
-#Handle macOS first
-if [ "$(uname -s)" = "Darwin" ]; then
+UNAME_S="$(uname -s)"
+
+# Handle MSYS2 / MinGW on Windows. uname reports MSYS_NT-*, MINGW64_NT-*,
+# MINGW32_NT-*, or UCRT64_NT-* depending on the active subsystem. We always
+# install packages from the MSYS shell namespace ("pacman -S <name>", no
+# mingw-w64- prefix), because the toolchain build scripts run under bash and
+# expect a POSIX-like host environment, not a mingw cross environment.
+if [ "${UNAME_S:0:5}" = "MINGW" ] || [ "${UNAME_S:0:5}" = "MSYS_" ] || [ "${UNAME_S:0:6}" = "UCRT64" ]; then
+  if ! command -v pacman >/dev/null 2>&1; then
+    echo "ERROR: pacman not found. Install MSYS2 (https://www.msys2.org/) and run prepare.sh from an MSYS2 shell."
+    exit 1
+  fi
+
+  echo "Detected MSYS2 / MinGW on Windows; installing host build dependencies via pacman"
+
+  # MSYS2 namespace packages used to build the cross toolchain.
+  # gcc/g++/make/binutils/etc. live under base-devel + msys/gcc.
+  pacman -S --needed --noconfirm \
+    base-devel \
+    git \
+    patch \
+    wget \
+    tar \
+    unzip \
+    gcc \
+    autoconf \
+    automake \
+    libtool \
+    bison \
+    flex \
+    gettext \
+    texinfo \
+    pkgconf \
+    cmake \
+    python \
+    python-pip \
+    gmp-devel \
+    mpfr-devel \
+    mpc-devel \
+    libgmp \
+    libmpfr \
+    libmpc \
+    libarchive-devel \
+    openssl-devel \
+    gpgme \
+    ncurses-devel \
+    libusb \
+    libreadline-devel \
+    zlib-devel \
+    libtre-devel \
+    gawk \
+    diffutils \
+    file \
+    which || { echo "ERROR: pacman install failed"; exit 1; }
+
+  # `gpgme-tool` is part of the upstream gpgme source release but is not built
+  # in MSYS2's gpgme package. depends/check-dependencies.sh will complain.
+  # The pspdev build does not actually invoke gpgme-tool at runtime; the check
+  # is conservative. See I:\pspdev-win\README.md ("Known blockers") for the
+  # current workaround.
+  echo "MSYS2 dependencies installed. Note: gpgme-tool is not packaged for MSYS2 (see README)."
+  exit 0
+fi
+
+# Handle macOS first
+if [ "$UNAME_S" = "Darwin" ]; then
   ## Check if using brew
   if command -v brew &> /dev/null; then
     brew update

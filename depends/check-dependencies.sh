@@ -33,14 +33,24 @@ check_program   bison
 check_program   flex
 check_program   python3
 check_program   pip3
-check_program   gpgme-tool
 
-# macOS uses it's own fork of libtool
-if [ "$(uname)" != "Darwin" ]; then
-check_program libtoolize
-else
-check_program glibtoolize
-fi 
+# gpgme-tool is required by psp-pacman for verifying signed packages.
+# MSYS2's gpgme package does not ship gpgme-tool, and the Windows port skips
+# psp-pacman entirely (see scripts/003-psp-packages.sh), so the check is
+# unnecessary on MSYS2/MINGW.
+UNAME_S="$(uname)"
+case "$UNAME_S" in
+    MINGW*|MSYS_*|UCRT64*)
+        : ;; # skip on Windows
+    *)
+        check_program gpgme-tool ;;
+esac
+
+# macOS uses its own fork of libtool
+case "$UNAME_S" in
+    Darwin) check_program glibtoolize ;;
+    *)      check_program libtoolize ;;
+esac
 
 check_library   libarchive
 check_library   openssl         

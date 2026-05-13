@@ -62,6 +62,18 @@ if [ "${UNAME_S:0:5}" = "MINGW" ] || [ "${UNAME_S:0:5}" = "MSYS_" ] || [ "${UNAM
   # The pspdev build does not actually invoke gpgme-tool at runtime; the check
   # is conservative. See I:\pspdev-win\README.md ("Known blockers") for the
   # current workaround.
+
+  # MSYS2's `python` package historically only ships /usr/bin/python (a real
+  # binary linked to python3.x); /usr/bin/python3 and /usr/bin/pip3 are not
+  # guaranteed across package revisions. check-dependencies.sh greps for
+  # python3 / pip3 specifically, so symlink them in if missing.
+  if command -v python >/dev/null 2>&1 && ! command -v python3 >/dev/null 2>&1; then
+    ln -sf /usr/bin/python /usr/bin/python3
+  fi
+  if command -v pip >/dev/null 2>&1 && ! command -v pip3 >/dev/null 2>&1; then
+    ln -sf /usr/bin/pip /usr/bin/pip3
+  fi
+
   echo "MSYS2 dependencies installed. Note: gpgme-tool is not packaged for MSYS2 (see README)."
   exit 0
 fi

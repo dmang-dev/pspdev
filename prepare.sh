@@ -19,6 +19,13 @@ if [ "${UNAME_S:0:5}" = "MINGW" ] || [ "${UNAME_S:0:5}" = "MSYS_" ] || [ "${UNAM
 
   # MSYS2 namespace packages used to build the cross toolchain.
   # gcc/g++/make/binutils/etc. live under base-devel + msys/gcc.
+  # NOT in the list (deliberate):
+  #   - gpgme: only used by psp-pacman, which is skipped on Windows; also
+  #     filtered out of devkitPro's bundled MSYS2 repos.
+  #   - libusb: only used by pspsh / usbhostfs_pc, which are skipped on
+  #     MINGW upstream; also filtered out of devkitPro's bundled MSYS2.
+  #   - gmp / mpfr / mpc runtime libs: pulled in transitively by the
+  #     corresponding -devel packages, no need to list separately.
   pacman -S --needed --noconfirm \
     base-devel \
     git \
@@ -41,14 +48,9 @@ if [ "${UNAME_S:0:5}" = "MINGW" ] || [ "${UNAME_S:0:5}" = "MSYS_" ] || [ "${UNAM
     gmp-devel \
     mpfr-devel \
     mpc-devel \
-    libgmp \
-    libmpfr \
-    libmpc \
     libarchive-devel \
     openssl-devel \
-    gpgme \
     ncurses-devel \
-    libusb \
     libreadline-devel \
     zlib-devel \
     libtre-devel \

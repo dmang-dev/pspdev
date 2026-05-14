@@ -27,6 +27,13 @@ if [ "${UNAME_S:0:5}" = "MINGW" ] || [ "${UNAME_S:0:5}" = "MSYS_" ] || [ "${UNAM
   #   - gmp / mpfr / mpc runtime libs: pulled in transitively by the
   #     corresponding -devel packages, no need to list separately.
   #
+  # libgpg-error-devel IS needed: psptoolchain-extra has its own
+  # depends/check-dependencies.sh that hard-requires `gpgrt-config`, which
+  # ships in libgpg-error-devel (not the base libgpg-error library package).
+  # The check is overly strict on Windows (gpgrt-config is only transitively
+  # needed by psp-pacman, which is skipped on MINGW) but installing the
+  # package is simpler than patching a repo that build-all.sh re-clones.
+  #
   # `--overwrite='/usr/share/info/*'` works around the autoconf/automake
   # version-bump trap: autoconf2.72 and autoconf2.73 both claim
   # /usr/share/info/autoconf.info.gz, and devkitPro's MSYS2 typically ships
@@ -59,6 +66,7 @@ if [ "${UNAME_S:0:5}" = "MINGW" ] || [ "${UNAME_S:0:5}" = "MSYS_" ] || [ "${UNAM
     openssl-devel \
     ncurses-devel \
     libreadline-devel \
+    libgpg-error-devel \
     zlib-devel \
     libtre-devel \
     gawk \

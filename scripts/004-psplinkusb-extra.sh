@@ -18,11 +18,20 @@ OSVER=$(uname)
 ## Compile and install.
 make --quiet -j $PROC_NR clean          			|| { exit 1; }
 make --quiet -j $PROC_NR all            			|| { exit 1; }
-# WIndows currently can't compile pspsh, usbhostfs_pc
-if [ "${OSVER:0:5}" != MINGW ]; then
-	make --quiet -j $PROC_NR -C pspsh install 			|| { exit 1; }
-	make --quiet -j $PROC_NR -C usbhostfs_pc install 	|| { exit 1; }
-fi
+# Windows currently can't compile pspsh / usbhostfs_pc (they need a
+# Linux-flavoured libusb). Upstream gates these on "${OSVER:0:5}" != MINGW,
+# but under the MSYS2 *MSYS* shell uname reports "MSYS_NT-..." (not MINGW*),
+# so the original check would still try -- and fail -- to build them.
+# Skip the host debug-link tools on MINGW*, MSYS_* and UCRT64* alike.
+case "$OSVER" in
+	MINGW*|MSYS_*|UCRT64*)
+		echo "[windows-port] Skipping pspsh / usbhostfs_pc (host USB tools) on $OSVER"
+		;;
+	*)
+		make --quiet -j $PROC_NR -C pspsh install 			|| { exit 1; }
+		make --quiet -j $PROC_NR -C usbhostfs_pc install 	|| { exit 1; }
+		;;
+esac
 
 ## Store build information
 BUILD_FILE="${PSPDEV}/build.txt"

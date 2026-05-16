@@ -1,0 +1,57 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+Subject: [PATCH] libalpm: avoid duplicating prefix when SYSHOOKDIR already
+ starts with rootdir
+
+`SYSHOOKDIR` is normally a system-relative path like "/usr/share/libalpm/
+hooks/", and `alpm_initialize` concatenates `root + SYSHOOKDIR[1:]` to
+get the hook dir under `root`. That works for the common Linux install
+where root="/" and SYSHOOKDIR is genuinely relative.
+
+When pacman is built with `--prefix=<non-system-dir>` (e.g.
+`/i/pspdev-win/install` for our PSP toolchain), the meson DATAROOTDIR
+that feeds SYSHOOKDIR bakes in the FULL prefix:
+
+    #define SYSHOOKDIR "/i/pspdev-win/install/share/libalpm/hooks/"
+
+`psp-pacman`'s wrapper script then runs pacman with `--root "${PSPDEV}"`,
+so `myhandle->root` is also `/i/pspdev-win/install/`. The concat then
+produces `<prefix>/<prefix>/share/libalpm/hooks/`, a bogus duplicated
+path that `pacman -Sv` reports under "Hook Dirs".
+
+This patch detects the case where SYSHOOKDIR already starts with root
+and uses SYSHOOKDIR directly. For the normal Linux install (root="/"),
+strncmp also matches and SYSHOOKDIR alone equals what the concat would
+have produced, so this is a no-op.
+---
+ lib/libalpm/alpm.c | 18 ++++++++++++++----
+ 1 file changed, 14 insertions(+), 4 deletions(-)
+
+diff --git a/lib/libalpm/alpm.c b/lib/libalpm/alpm.c
+--- a/lib/libalpm/alpm.c
++++ b/lib/libalpm/alpm.c
+@@ -51,11 +51,20 @@ alpm_handle_t SYMEXPORT *alpm_initialize(const char *root, const char *dbpath,
+ 		goto cleanup;
+ 	}
+ 
+-	/* to concatenate myhandle->root (ends with a slash) with SYSHOOKDIR (starts
+-	 * with a slash) correctly, we skip SYSHOOKDIR[0]; the regular +1 therefore
+-	 * disappears from the allocation */
+-	MALLOC(hookdir, strlen(myhandle->root) + strlen(SYSHOOKDIR), goto nomem);
+-	sprintf(hookdir, "%s%s", myhandle->root, &SYSHOOKDIR[1]);
++	/* SYSHOOKDIR is normally a system-relative path like
++	 * "/usr/share/libalpm/hooks/" and we concatenate it onto
++	 * myhandle->root. But when pacman is built with --prefix=<non-system-
++	 * dir>, meson bakes the full prefix into SYSHOOKDIR, and our wrapper
++	 * may pass the same prefix as --root; a naive concat would then double
++	 * the prefix. Detect that case and use SYSHOOKDIR as-is. For the
++	 * normal install (root="/") strncmp also matches and SYSHOOKDIR alone
++	 * equals what the concat would have produced. */
++	if(strncmp(myhandle->root, SYSHOOKDIR, strlen(myhandle->root)) == 0) {
++		STRDUP(hookdir, SYSHOOKDIR, goto nomem);
++	} else {
++		MALLOC(hookdir, strlen(myhandle->root) + strlen(SYSHOOKDIR), goto nomem);
++		sprintf(hookdir, "%s%s", myhandle->root, &SYSHOOKDIR[1]);
++	}
+ 	myhandle->hookdirs = alpm_list_add(NULL, hookdir);
+ 
+ 	/* set default database extension */

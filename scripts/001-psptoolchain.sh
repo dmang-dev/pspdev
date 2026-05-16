@@ -36,10 +36,10 @@ case "$(uname)" in
 
     cd build || { echo "ERROR: psptoolchain/build missing"; exit 1; }
 
-    # --- Build psp-pacman with destdir patch -------------------------
-    PATCH_SRC="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)/patches/psp-pacman/fix-destdir-double-slash.patch"
-    if [ ! -f "$PATCH_SRC" ]; then
-      echo "ERROR: patch file not found at $PATCH_SRC"
+    # --- Build psp-pacman with our patches ---------------------------
+    PATCH_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)/patches/psp-pacman"
+    if [ ! -d "$PATCH_DIR" ]; then
+      echo "ERROR: patch directory not found at $PATCH_DIR"
       exit 1
     fi
 
@@ -48,12 +48,18 @@ case "$(uname)" in
     fi
     (
       cd psp-pacman || exit 1
-      cp "$PATCH_SRC" patches/
-      # Inject one `apply_patch` line into pacman.sh, after the existing
-      # apply_patch for 147, so our destdir fix lands on the pacman source
-      # before `ninja install` runs. Guard with grep so re-runs don't dup.
+      cp "$PATCH_DIR"/*.patch patches/
+      # Inject our apply_patch lines into pacman.sh, after the existing
+      # apply_patch for 147. Guard with grep so re-runs don't dup.
+      #   - fix-destdir-double-slash: unblocks `ninja install` on MSYS2
+      #     (the "//" UNC bug)
+      #   - fix-syshookdir-doubled-prefix: cleans up runtime Hook Dirs
+      #     listing when prefix != / (a cosmetic verbose-output bug)
       if ! grep -q 'apply_patch fix-destdir-double-slash' pacman.sh; then
         sed -i '/^apply_patch 147/a apply_patch fix-destdir-double-slash' pacman.sh
+      fi
+      if ! grep -q 'apply_patch fix-syshookdir-doubled-prefix' pacman.sh; then
+        sed -i '/^apply_patch fix-destdir-double-slash/a apply_patch fix-syshookdir-doubled-prefix' pacman.sh
       fi
       ./pacman.sh
     ) || { exit 1; }

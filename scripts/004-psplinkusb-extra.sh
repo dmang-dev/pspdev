@@ -18,14 +18,16 @@ OSVER=$(uname)
 ## Compile and install.
 make --quiet -j $PROC_NR clean          			|| { exit 1; }
 make --quiet -j $PROC_NR all            			|| { exit 1; }
-# Windows currently can't compile pspsh / usbhostfs_pc (they need a
-# Linux-flavoured libusb). Upstream gates these on "${OSVER:0:5}" != MINGW,
-# but under the MSYS2 *MSYS* shell uname reports "MSYS_NT-..." (not MINGW*),
-# so the original check would still try -- and fail -- to build them.
-# Skip the host debug-link tools on MINGW*, MSYS_* and UCRT64* alike.
+# pspsh / usbhostfs_pc are the PC-side USB host-link debug tools. They link
+# libusb. MSYS2's msys namespace does NOT ship libusb (it needs native
+# WinUSB driver access — only mingw-w64-* libusb packages exist). Building
+# pspsh/usbhostfs_pc as MSYS-hosted binaries therefore can't work; they need
+# to be built as standalone MinGW binaries against the mingw-w64 libusb.
+# That's a real design change (mixed MSYS-cygwin + MinGW build), tracked at
+# dmang-dev/pspdev-win#2.
 case "$OSVER" in
 	MINGW*|MSYS_*|UCRT64*)
-		echo "[windows-port] Skipping pspsh / usbhostfs_pc (host USB tools) on $OSVER"
+		echo "[windows-port] Skipping pspsh / usbhostfs_pc on $OSVER -- needs MinGW build, see dmang-dev/pspdev-win#2"
 		;;
 	*)
 		make --quiet -j $PROC_NR -C pspsh install 			|| { exit 1; }

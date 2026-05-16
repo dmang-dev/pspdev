@@ -17,22 +17,24 @@ if [ "${UNAME_S:0:5}" = "MINGW" ] || [ "${UNAME_S:0:5}" = "MSYS_" ] || [ "${UNAM
 
   echo "Detected MSYS2 / MinGW on Windows; installing host build dependencies via pacman"
 
-  # MSYS2 namespace packages used to build the cross toolchain.
+  # MSYS2 namespace packages used to build the cross toolchain plus the
+  # host-side tools (psp-pacman, pspsh, usbhostfs_pc).
   # gcc/g++/make/binutils/etc. live under base-devel + msys/gcc.
   # NOT in the list (deliberate):
-  #   - gpgme: only used by psp-pacman, which is skipped on Windows; also
-  #     filtered out of devkitPro's bundled MSYS2 repos.
-  #   - libusb: only used by pspsh / usbhostfs_pc, which are skipped on
-  #     MINGW upstream; also filtered out of devkitPro's bundled MSYS2.
   #   - gmp / mpfr / mpc runtime libs: pulled in transitively by the
   #     corresponding -devel packages, no need to list separately.
   #
-  # libgpg-error-devel IS needed: psptoolchain-extra has its own
-  # depends/check-dependencies.sh that hard-requires `gpgrt-config`, which
-  # ships in libgpg-error-devel (not the base libgpg-error library package).
-  # The check is overly strict on Windows (gpgrt-config is only transitively
-  # needed by psp-pacman, which is skipped on MINGW) but installing the
-  # package is simpler than patching a repo that build-all.sh re-clones.
+  # libgpg-error-devel + libgpgme-devel + libcurl-devel: needed by psp-pacman.
+  # Without libcurl, libalpm has no internal HTTP downloader and `pacman -Sy`
+  # dies with "error invoking external downloader". Without libgpgme, pacman
+  # rejects the default pacman.conf's SigLevel directive.
+  #
+  # NOT included: libusb. MSYS2's msys namespace does not ship libusb (only
+  # mingw-w64 namespaces do — libusb needs native WinUSB driver access that
+  # doesn't fit the POSIX-shim MSYS model). pspsh / usbhostfs_pc are
+  # therefore still skipped in scripts/004-psplinkusb-extra.sh. Building
+  # them as standalone MinGW binaries (linking the mingw-w64 libusb) is the
+  # real fix and is tracked at dmang-dev/pspdev-win#2.
   #
   # `--overwrite='/usr/share/info/*'` works around the autoconf/automake
   # version-bump trap: autoconf2.72 and autoconf2.73 both claim

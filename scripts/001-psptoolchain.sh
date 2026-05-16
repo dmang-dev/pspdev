@@ -1,6 +1,17 @@
 #!/bin/bash
 # psptoolchain.sh by fjtrujy
 
+## Resolve PATCH_DIR up front, before any `cd`.
+## BASH_SOURCE[0] is whatever path was used to invoke this script
+## (frequently relative, e.g. `../scripts/001-psptoolchain.sh`). The
+## MSYS2 branch below does several `cd` calls (./toolchain.sh, `cd build`)
+## that break a deferred re-resolution — we'd end up reading
+## ../scripts/.. relative to psptoolchain/build/ and pointing PATCH_DIR
+## at psptoolchain/patches/psp-pacman/ (which doesn't exist) instead of
+## pspdev/patches/psp-pacman/ (which does). Resolve once, here, while
+## the cwd is still wherever the caller started us.
+PATCH_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)/patches/psp-pacman"
+
 ## Download the source code.
 REPO_URL="https://github.com/pspdev/psptoolchain"
 REPO_FOLDER="psptoolchain"
@@ -37,7 +48,9 @@ case "$(uname)" in
     cd build || { echo "ERROR: psptoolchain/build missing"; exit 1; }
 
     # --- Build psp-pacman with our patches ---------------------------
-    PATCH_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)/patches/psp-pacman"
+    # PATCH_DIR was resolved at the top of this script, before any `cd`,
+    # so this check works regardless of how many directory hops happened
+    # during ./toolchain.sh 1 above.
     if [ ! -d "$PATCH_DIR" ]; then
       echo "ERROR: patch directory not found at $PATCH_DIR"
       exit 1

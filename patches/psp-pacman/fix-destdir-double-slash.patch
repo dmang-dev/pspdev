@@ -1,0 +1,34 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+Subject: [PATCH] meson: avoid '//' in DESTDIR-prefixed mkdir paths
+
+The `mkdir -p "$DESTDIR/@0@"` template at meson.build:409 concatenates
+`$DESTDIR` + `/` + an absolute path. When DESTDIR is empty (the common
+case) the result is `//<abs path>`. On Linux this is harmless because
+POSIX/Linux treats leading `//` like `/`, but on MSYS2/Cygwin a leading
+`//` is interpreted as a UNC share prefix (`\\host\...`), and mkdir
+fails with `cannot create directory '//x': Read-only file system`.
+
+The fix is one character: drop the slash between `$DESTDIR` and `@0@`.
+The leading `/` of the absolute path provides the separator, and the
+behavior is unchanged on Linux (where `$DESTDIR//abs` and
+`$DESTDIR/abs` both work) while becoming correct on MSYS2.
+
+This is the standard Autotools-era pattern: `$(DESTDIR)$(prefix)/...`
+without an intervening slash.
+---
+ meson.build | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/meson.build b/meson.build
+index 76b9d2a..76b9d2a 100644
+--- a/meson.build
++++ b/meson.build
+@@ -406,7 +406,7 @@ foreach path : [
+ 	join_paths(DATAROOTDIR, 'makepkg-template/'),
+ 	join_paths(DATAROOTDIR, 'libalpm/hooks/'),
+ 	]
+-	meson.add_install_script('sh', '-c', 'mkdir -p "$DESTDIR/@0@"'.format(path))
++	meson.add_install_script('sh', '-c', 'mkdir -p "$DESTDIR@0@"'.format(path))
+ endforeach
+
+ TEST_ENV = environment()

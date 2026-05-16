@@ -67,6 +67,8 @@ if [ "${UNAME_S:0:5}" = "MINGW" ] || [ "${UNAME_S:0:5}" = "MSYS_" ] || [ "${UNAM
     ncurses-devel \
     libreadline-devel \
     libgpg-error-devel \
+    libgpgme-devel \
+    libcurl-devel \
     zlib-devel \
     libtre-devel \
     gawk \

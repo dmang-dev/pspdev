@@ -34,10 +34,10 @@ check_program   flex
 check_program   python3
 check_program   pip3
 
-# gpgme-tool is required by psp-pacman for verifying signed packages.
-# MSYS2's gpgme package does not ship gpgme-tool, and the Windows port skips
-# psp-pacman entirely (see scripts/003-psp-packages.sh), so the check is
-# unnecessary on MSYS2/MINGW.
+# gpgme-tool is a command-line wrapper around libgpgme. psp-pacman links
+# libgpgme directly (via libgpgme-devel installed in prepare.sh) and does
+# not need the gpgme-tool binary at runtime. MSYS2 ships libgpgme but not
+# the gpgme-tool binary, so we skip this check on MSYS2/MINGW.
 UNAME_S="$(uname)"
 case "$UNAME_S" in
     MINGW*|MSYS_*|UCRT64*)

@@ -57,7 +57,15 @@ case "$(uname)" in
     fi
 
     if test ! -d psp-pacman; then
-      git clone https://github.com/pspdev/psp-pacman --depth 1 || exit 1
+      # Pin psp-pacman to the last pacman-6.0.1 commit (5fe84182f, 2026-05-16).
+      # Upstream 2fdc01e1 (2026-06-02) bumped to pacman 7.1.0, whose
+      # `meson install` fails on MSYS2 creating the pacman-key bash-completion
+      # symlink ("share/bash-completion/completions/pacman-key: No such file or
+      # directory") and aborts the whole toolchain build. The patches injected
+      # below target the 6.0.1 tree. Full clone (no --depth 1) so the pinned
+      # commit is reachable for checkout.
+      git clone https://github.com/pspdev/psp-pacman || exit 1
+      ( cd psp-pacman && git checkout 5fe84182f50fe82a0f9d191396dcaf8b15aeed50 ) || exit 1
     fi
     (
       cd psp-pacman || exit 1

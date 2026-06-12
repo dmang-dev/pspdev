@@ -29,6 +29,12 @@ if [ "${UNAME_S:0:5}" = "MINGW" ] || [ "${UNAME_S:0:5}" = "MSYS_" ] || [ "${UNAM
   # dies with "error invoking external downloader". Without libgpgme, pacman
   # rejects the default pacman.conf's SigLevel directive.
   #
+  # meson + ninja: psp-pacman's build (setup_build_system in its common.sh)
+  # pip-installs both into a throwaway venv, but that venv stopped yielding a
+  # meson on PATH on current MSYS2 python builds, killing the toolchain build
+  # with `meson: command not found`. System packages make `meson build`
+  # resolve regardless of the venv's state.
+  #
   # NOT included: libusb. MSYS2's msys namespace does not ship libusb (only
   # mingw-w64 namespaces do — libusb needs native WinUSB driver access that
   # doesn't fit the POSIX-shim MSYS model). pspsh / usbhostfs_pc are
@@ -59,6 +65,8 @@ if [ "${UNAME_S:0:5}" = "MINGW" ] || [ "${UNAME_S:0:5}" = "MSYS_" ] || [ "${UNAM
     texinfo \
     pkgconf \
     cmake \
+    meson \
+    ninja \
     python \
     python-pip \
     gmp-devel \
